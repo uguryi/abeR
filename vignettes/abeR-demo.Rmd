@@ -1,0 +1,154 @@
+---
+title: "abeR Demo"
+author: "Ugur Yildirim"
+date: "7/14/2020"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{abeR-demo}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(abeR)
+```
+
+## Introduction
+
+This vignette demonstrates how to use the `abeR` package to match two datasets on first name, last name, and birth year.
+
+The example datasets are the 1920 census (1% sample) and the 1930 census (5% sample). Due to data limitations, both datasets only contain individuals born in Oregon (`BPL=41`).
+
+## Clean names
+
+We will start by cleaning names in both datasets. Two important aspects of this cleaning are (1) removing titles (e.g., Dr.) from names and converting nicknames into their standardized versions (e.g., Billy to William).
+
+The following code chunk reads in the files that store information regarding (1) titles to be removed and (2) which nickname corresponds to which standard name. We will need these files later when running the `clean_names(...)` function.
+
+```{r message=F}
+# Read in titles and nicknames files
+titles           <- readr::read_csv(system.file("extdata", "titles.csv",           package = "abeR"))
+male_nicknames   <- readr::read_csv(system.file("extdata", "male_nicknames.csv",   package = "abeR"))
+female_nicknames <- readr::read_csv(system.file("extdata", "female_nicknames.csv", package = "abeR"))
+
+# Combine male and female nicknames into a single dataframe
+nicknames <- as.data.frame(rbind(male_nicknames, female_nicknames))
+```
+
+Next, we run `abeR`'s `clean_names(...)` function on both datasets. This function implements the name cleaning part of the ABE method as described in [Abramitzky et al (2019)](https://ranabr.people.stanford.edu/sites/g/files/sbiybj5391/f/linking_may2019.pdf) and originally implemented in Stata (see <https://ranabr.people.stanford.edu/matching-codes>). The function expects `titles` and `nicknames` defined earlier to be in memory.
+
+Given this setup, the following code chunks take datasets with raw, uncleaned names and generate new datasets where names are cleaned (e.g., "Dr. Billy" becomes simply "William").
+
+```{r message=F}
+# Clean 1920 names
+
+# Set parameters to be used in clean_names
+in_path_census_1920    <- system.file("extdata", package = "abeR")
+lname_col_census_1920  <- "NAMELAST"
+fname_col_census_1920  <- "NAMEFRST"
+sex_col_census_1920    <- "SEX"
+other_cols_census_1920 <- c("BIRTHYR", "BPL", "BPLD", "RACE", "RACED", "SERIAL", "PERNUM", "AGE")
+out_path_census_1920   <- "~/demo-output" # CHANGE THIS TO WHERE YOU WANT THE PROCESSED FILE TO BE SAVED
+middle_census_1920     <- ""
+file_name_census_1920  <- "census_1920_1pct_small.csv"
+
+# Run clean names
+clean_names(in_path_census_1920, file_name_census_1920, lname_col_census_1920, fname_col_census_1920,
+            sex_col_census_1920, other_cols_census_1920, out_path_census_1920, middle_census_1920)
+
+# Read in processed dataset
+census_1920_1pct_small_cleaned <- readr::read_csv(
+  paste(out_path_census_1920, gsub(".csv", "_cleaned.csv", file_name_census_1920), sep="/")
+)
+```
+
+```{r message=F}
+# Clean 1930 names
+
+# Set parameters to be used in clean_names
+in_path_census_1930    <- system.file("extdata", package = "abeR")
+lname_col_census_1930  <- "NAMELAST"
+fname_col_census_1930  <- "NAMEFRST"
+sex_col_census_1930    <- "SEX"
+other_cols_census_1930 <- c("BIRTHYR", "BPL", "BPLD", "RACE", "RACED", "SERIAL", "PERNUM", "AGE")
+out_path_census_1930   <- "~/demo-output" # CHANGE THIS TO WHERE YOU WANT THE PROCESSED FILE TO BE SAVED
+middle_census_1930     <- ""
+file_name_census_1930  <- "census_1930_5pct_small.csv"
+
+# Run clean names
+clean_names(in_path_census_1930, file_name_census_1930, lname_col_census_1930, fname_col_census_1930,
+            sex_col_census_1930, other_cols_census_1930, out_path_census_1930, middle_census_1930)
+
+# Read in processed dataset
+census_1930_5pct_small_cleaned <- readr::read_csv(
+  paste(out_path_census_1930, gsub(".csv", "_cleaned.csv", file_name_census_1930), sep="/")
+)
+```
+
+## Match records
+
+Once we have the datasets with cleaned names, we are ready to match our datasets using the ABE method. We use `abeR`'s `match_records(...)` function here. Once again, the implementation is based on [Abramitzky et al (2019)](https://ranabr.people.stanford.edu/sites/g/files/sbiybj5391/f/linking_may2019.pdf) and replicates the automated procedure originally written in Stata (see <https://ranabr.people.stanford.edu/matching-codes>).
+
+For the sake of simplicity and ease of matching, we focus on men only in this example. 
+
+```{r}
+# Restrict samples to males only
+file_A_male <- subset(census_1920_1pct_small_cleaned, sex == 1)
+file_B_male <- subset(census_1930_5pct_small_cleaned, sex == 1)
+```
+
+Next, we generate an ID column that uniquely identifies rows and set the parameters to be used in the matching algorithm.
+
+```{r}
+# Generate ID column
+file_A_male$ID <- paste(file_A_male$SERIAL, file_A_male$PERNUM, sep="_")
+file_B_male$ID <- paste(file_B_male$SERIAL, file_B_male$PERNUM, sep="_")
+
+# Set parameters to be used in match_records
+fname_var_A      <- "fname"
+fname_var_B      <- "fname"
+lname_var_A      <- "lname"
+lname_var_B      <- "lname"
+time_var_A       <- "BIRTHYR"
+time_var_B       <- "BIRTHYR"
+id_var_A         <- "ID"
+id_var_B         <- "ID"
+vars_to_keep_A   <- c("fname_raw", "lname_raw")
+vars_to_keep_B   <- c("fname_raw", "lname_raw")
+out_path         <- "~/demo-output" # CHANGE THIS TO WHERE YOU WANT THE PROCESSED FILE TO BE SAVED
+out_file_name    <- "census_1920_1930_small_matched_men.csv"
+timeband         <- 2
+uniqueband_file  <- 2
+uniqueband_match <- 2
+```
+
+Finally, we run `match_records(...)` on our datasets to generate our matches. This function generates the matched dataset and saves it to `out_path`.
+
+```{r warning=F}
+# Run match_records
+match_records(file_A_male, fname_var_A, lname_var_A, time_var_A, id_var_A, vars_to_keep_A,
+              file_B_male, fname_var_B, lname_var_B, time_var_B, id_var_B, vars_to_keep_B,
+              out_path, out_file_name, timeband, uniqueband_file, uniqueband_match)
+```
+
+## Inspect matches
+
+Once we have our matches ready, we can inspect them. 
+
+```{r message=F}
+# Read in matches
+census_1920_1930_small_matched_men <- readr::read_csv(paste(out_path, out_file_name, sep="/"))
+
+# Count number of standard ABE matches
+nrow(census_1920_1930_small_matched_men)
+
+# Count number of conservative ABE matches
+nrow(subset(census_1920_1930_small_matched_men, uniquestub_match2 == 1 & uniquestub_file2 == 1))
+```

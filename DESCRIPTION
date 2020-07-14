@@ -1,0 +1,32 @@
+Package: abeR
+Title: ABE Method For Historical Record Linking
+Version: 1.0.0
+Authors@R: 
+    person(given = "Ugur",
+           family = "Yildirim",
+           role = c("aut", "cre"),
+           email = "ugur.yildirim@berkeley.edu")
+Description: This package implements the ABE method for historical record linking. 
+    The methodology was developed by Ran Abramitzky, Leah Platt Boustan, and Katherine Eriksson 
+    (\href{https://ranabr.people.stanford.edu/sites/g/files/sbiybj5391/f/abe_ageofmassmigration.pdf}{2012}, 
+    \href{https://ranabr.people.stanford.edu/sites/g/files/sbiybj5391/f/abe_assimilation_1.pdf}{2014}, 
+    \href{https://ranabr.people.stanford.edu/sites/g/files/sbiybj5391/f/return-migrants.pdf}{2017}). 
+    The original Stata implementation of the method can be found in 
+    \href{https://ranabr.people.stanford.edu/matching-codes}{Ran Abramitzky's website}. 
+    NYSIIS name standardization and Jaro-Winkler adjustment are currently not supported by this R package.
+License: `use_mit_license("Ugur Yildirim")`
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Imports:
+    dplyr,
+    magrittr,
+    readr,
+    stringi,
+    stringr,
+    tidyverse
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
