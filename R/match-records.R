@@ -105,15 +105,19 @@ append_A_to_B <- function(file_A, file_B, uniqueband_file=2, backward=FALSE) {
       file_AB <- file_AB %>%
         dplyr::group_by(file_B, fname, lname) %>%
         dplyr::mutate(idx = dplyr::row_number(),
-               tot = dplyr::n(),
-               temp = ifelse((byear - i <= data.table::shift(byear, n=1, fill=NA, type="lag")  & idx > 1) |
-                             (byear + i >= data.table::shift(byear, n=1, fill=NA, type="lead") & idx < tot), 1, temp)) %>%
-        dplyr::ungroup() # SLOW (~50s for ~400K obs)
+                      tot = dplyr::n()) %>%
+        dplyr::ungroup()
+      file_AB$byear_lag  <- data.table::shift(file_AB$byear, n=1, fill=NA, type="lag")
+      file_AB$byear_lead <- data.table::shift(file_AB$byear, n=1, fill=NA, type="lead")
+      file_AB$temp <- ifelse((file_AB$byear - i <= file_AB$byear_lag  & file_AB$idx > 1) |
+                             (file_AB$byear + i >= file_AB$byear_lead & file_AB$idx < file_AB$tot), 1, file_AB$temp)
       file_AB[[paste0("uniquestub_file", i)]] <- 1 - file_AB$temp
       file_AB$temp <- NULL
     }
     file_AB$idx <- NULL
     file_AB$tot <- NULL
+    file_AB$byear_lag <- NULL
+    file_AB$byear_lead <- NULL
   } else {
     file_AB <- file_AB[with(file_AB, order(file_A, fname, lname, byear)), ]
     for (i in 1:uniqueband_file) {
@@ -121,19 +125,20 @@ append_A_to_B <- function(file_A, file_B, uniqueband_file=2, backward=FALSE) {
       file_AB <- file_AB %>%
         dplyr::group_by(file_A, fname, lname) %>%
         dplyr::mutate(idx = dplyr::row_number(),
-               tot = dplyr::n(),
-               temp = ifelse((byear - i <= data.table::shift(byear, n=1, fill=NA, type="lag")  & idx > 1) |
-                             (byear + i >= data.table::shift(byear, n=1, fill=NA, type="lead") & idx < tot), 1, temp)) %>%
-        dplyr::ungroup() # SLOW (~50s for ~400K obs)
+                      tot = dplyr::n()) %>%
+        dplyr::ungroup()
+      file_AB$byear_lag  <- data.table::shift(file_AB$byear, n=1, fill=NA, type="lag")
+      file_AB$byear_lead <- data.table::shift(file_AB$byear, n=1, fill=NA, type="lead")
+      file_AB$temp <- ifelse((file_AB$byear - i <= file_AB$byear_lag  & file_AB$idx > 1) |
+                             (file_AB$byear + i >= file_AB$byear_lead & file_AB$idx < file_AB$tot), 1, file_AB$temp)
       file_AB[[paste0("uniquestub_file", i)]] <- 1 - file_AB$temp
       file_AB$temp <- NULL
     }
     file_AB$idx <- NULL
     file_AB$tot <- NULL
+    file_AB$byear_lag <- NULL
+    file_AB$byear_lead <- NULL
   }
-  # NOTES
-  # 1. This code chunk is the main performance bottleneck in this function.
-  #    Optimize it to run faster.
 
   # Update exactmatch1
   file_AB$exactmatch1 <- ifelse(file_AB$count_A == 1 & file_AB$count_B == 1, 1, file_AB$exactmatch1)
@@ -363,8 +368,12 @@ fix_ids <- function(file_AB_processed, timevar_keep, uniqueband_file=2, uniqueba
                                                file_AB_processed[[timevar_keep]], file_AB_processed$file_A), ]
 
   # Fix ID's
-  file_AB_processed$ID_A <- ifelse(file_AB_processed$file_B == 1, dplyr::lead(file_AB_processed$ID_A), file_AB_processed$ID_A)
-  file_AB_processed$ID_B <- ifelse(file_AB_processed$file_A == 1, dplyr::lag(file_AB_processed$ID_B),  file_AB_processed$ID_B)
+  file_AB_processed$ID_A <- ifelse(file_AB_processed$file_B == 1,
+                                   data.table::shift(file_AB_processed$ID_A, n=1, fill=NA, type="lead"),
+                                   file_AB_processed$ID_A)
+  file_AB_processed$ID_B <- ifelse(file_AB_processed$file_A == 1,
+                                   data.table::shift(file_AB_processed$ID_B, n=1, fill=NA, type="lag"),
+                                   file_AB_processed$ID_B)
 
   # Conservative ABE
   if (backward) {
