@@ -1,6 +1,6 @@
 #########################
 # AUTHOR: UGUR YILDIRIM #
-# DATE:   2020-07-14    #
+# DATE:   2020-07-17    #
 #########################
 
 # Define %>%
@@ -106,8 +106,8 @@ append_A_to_B <- function(file_A, file_B, uniqueband_file=2, backward=FALSE) {
         dplyr::group_by(file_B, fname, lname) %>%
         dplyr::mutate(idx = dplyr::row_number(),
                tot = dplyr::n(),
-               temp = ifelse((byear - i <= dplyr::lag(byear)  & idx > 1) |
-                             (byear + i >= dplyr::lead(byear) & idx < tot), 1, temp)) %>%
+               temp = ifelse((byear - i <= data.table::shift(byear, n=1, fill=NA, type="lag")  & idx > 1) |
+                             (byear + i >= data.table::shift(byear, n=1, fill=NA, type="lead") & idx < tot), 1, temp)) %>%
         dplyr::ungroup() # SLOW (~50s for ~400K obs)
       file_AB[[paste0("uniquestub_file", i)]] <- 1 - file_AB$temp
       file_AB$temp <- NULL
@@ -122,8 +122,8 @@ append_A_to_B <- function(file_A, file_B, uniqueband_file=2, backward=FALSE) {
         dplyr::group_by(file_A, fname, lname) %>%
         dplyr::mutate(idx = dplyr::row_number(),
                tot = dplyr::n(),
-               temp = ifelse((byear - i <= dplyr::lag(byear)  & idx > 1) |
-                             (byear + i >= dplyr::lead(byear) & idx < tot), 1, temp)) %>%
+               temp = ifelse((byear - i <= data.table::shift(byear, n=1, fill=NA, type="lag")  & idx > 1) |
+                             (byear + i >= data.table::shift(byear, n=1, fill=NA, type="lead") & idx < tot), 1, temp)) %>%
         dplyr::ungroup() # SLOW (~50s for ~400K obs)
       file_AB[[paste0("uniquestub_file", i)]] <- 1 - file_AB$temp
       file_AB$temp <- NULL
