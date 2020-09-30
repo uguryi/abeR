@@ -14,7 +14,7 @@ Description: This package implements the ABE method for historical record linkin
     The original Stata implementation of the method can be found in 
     \href{https://ranabr.people.stanford.edu/matching-codes}{Ran Abramitzky's website}. 
     NYSIIS name standardization and Jaro-Winkler adjustment are currently not supported by this R package.
-License: `use_mit_license("Ugur Yildirim")`
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

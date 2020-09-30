@@ -60,7 +60,7 @@ match_records(
 \item{uniqueband_match}{Uniqueness band used for conservative ABE (between)}
 }
 \value{
-\preformatted{          NULL
+\preformatted{            NULL
 }
 }
 \description{

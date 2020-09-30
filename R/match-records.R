@@ -1,6 +1,6 @@
 #########################
 # AUTHOR: UGUR YILDIRIM #
-# DATE:   2020-07-17    #
+# DATE:   2020-09-30    #
 #########################
 
 # Define %>%
@@ -455,7 +455,7 @@ fix_ids <- function(file_AB_processed, timevar_keep, uniqueband_file=2, uniqueba
 #' @param timeband         Time band used when searching for nonexact matches
 #' @param uniqueband_file  Uniqueness band used for conservative ABE (within)
 #' @param uniqueband_match Uniqueness band used for conservative ABE (between)
-#' @return               NULL
+#' @return                 NULL
 #' @export
 match_records <- function(file_A, fname_var_A, lname_var_A, time_var_A, id_var_A, vars_to_keep_A,
                           file_B, fname_var_B, lname_var_B, time_var_B, id_var_B, vars_to_keep_B,
@@ -507,7 +507,7 @@ match_records <- function(file_A, fname_var_A, lname_var_A, time_var_A, id_var_A
   file_A$nA        <- 1:nrow(file_A)
   file_A$ID_A      <- file_A$nA
   file_A           <- file_A[,c("ID_A", id_var_A, fname_var_A, lname_var_A, time_var_A, vars_to_keep_A)]
-  colnames(file_A) <- c("ID_A", "id_A", fname_var_A, lname_var_A, time_var_A, paste0(vars_to_keep_A, "_A"))
+  colnames(file_A) <- c("ID_A", "id_A", fname_var_A, lname_var_A, paste0(c(time_var_A, vars_to_keep_A), "_A"))
   file_A           <- dplyr::inner_join(file_A, final_A, by = c("ID_A"))
 
   # Merge back B
@@ -515,15 +515,15 @@ match_records <- function(file_A, fname_var_A, lname_var_A, time_var_A, id_var_A
   file_B           <- file_B[order(file_B[[fname_var_B]], file_B[[lname_var_B]], file_B[[time_var_B]]), ]
   file_B$nB        <- 1:nrow(file_B)
   file_B$ID_B      <- file_B$nB
-  file_B           <- file_B[,c("ID_B", id_var_B, vars_to_keep_B)]
-  colnames(file_B) <- c("ID_B", "id_B", paste0(vars_to_keep_B, "_B"))
+  file_B           <- file_B[,c("ID_B", id_var_B, time_var_B, vars_to_keep_B)]
+  colnames(file_B) <- c("ID_B", "id_B", paste0(c(time_var_B, vars_to_keep_B), "_B"))
   file_B           <- dplyr::inner_join(file_B, final_B, by = c("ID_B"))
 
   # Merge A to B
-  file_A           <- file_A[,c("ID_A", "id_A", fname_var_A, lname_var_A, time_var_A, paste0(vars_to_keep_A, "_A"), "timediff_A",
+  file_A           <- file_A[,c("ID_A", "id_A", fname_var_A, lname_var_A, paste0(c(time_var_A, vars_to_keep_A), "_A"), "timediff_A",
                                 "uniquestub_match1A", "uniquestub_file1A", "uniquestub_match2A", "uniquestub_file2A",
                                 "uniquestub_match1",  "uniquestub_file1",  "uniquestub_match2",  "uniquestub_file2")]
-  file_B           <- file_B[,c("ID_A", "id_B",                                       paste0(vars_to_keep_B, "_B"), "timediff_B")]
+  file_B           <- file_B[,c("ID_A", "id_B",                           paste0(c(time_var_B, vars_to_keep_B), "_B"), "timediff_B")]
   res              <- dplyr::inner_join(file_B, file_A, by = c("ID_A"))
   res$ID_A         <- NULL
 
